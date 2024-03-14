@@ -1,0 +1,37 @@
+{
+	"schemaVersion": 1,
+	"id": "calcite",
+	"version": "${version}",
+	"name": "Calcite",
+	"description": "Better experience for commanders",
+	"authors": [
+		"nutyworks"
+	],
+	"contact": {
+		"homepage": "https://nuty.works/",
+		"sources": "https://github.com/nutyworks/Calcite"
+	},
+	"license": "MIT",
+	"icon": "assets/calcite/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"works.nuty.calcite.CalciteMod"
+		],
+		"client": [
+			"works.nuty.calcite.CalciteModClient"
+		]
+	},
+	"mixins": [
+		"calcite.mixins.json",
+		{
+			"config": "calcite.client.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=0.15.0",
+		"minecraft": "~1.20.4",
+		"java": ">=17"
+	}
+}
