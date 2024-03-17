@@ -462,14 +462,15 @@ public class CalciteCommandScreen extends Screen {
                 };
             }
 
-            this.modeButton.setX(10);
-            this.modeButton.setY(y + 2);
-            this.modeButton.render(context, mouseX, mouseY, tickDelta);
+            if (this.loaded) {
+                this.modeButton.setX(10);
+                this.modeButton.setY(y + 2);
+                this.modeButton.render(context, mouseX, mouseY, tickDelta);
 
-            this.autoActivateButton.setX(30);
-            this.autoActivateButton.setY(y + 2);
-            this.autoActivateButton.render(context, mouseX, mouseY, tickDelta);
-
+                this.autoActivateButton.setX(30);
+                this.autoActivateButton.setY(y + 2);
+                this.autoActivateButton.render(context, mouseX, mouseY, tickDelta);
+            }
         }
 
         protected void syncSettingsToServer() {
