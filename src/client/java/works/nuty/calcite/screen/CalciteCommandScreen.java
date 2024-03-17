@@ -119,12 +119,12 @@ public class CalciteCommandScreen extends Screen {
             this.commandListWidget.scrollToFocused();
         }
 
-        ButtonWidget doneButton = this.addDrawableChild(
+        this.addDrawableChild(
                 ButtonWidget.builder(ScreenTexts.DONE, button -> this.commitAndClose())
                         .dimensions(this.width - 10 - 200 - 5, this.height - 25, 100, 20)
                         .build()
         );
-        ButtonWidget cancelButton = this.addDrawableChild(
+        this.addDrawableChild(
                 ButtonWidget.builder(ScreenTexts.CANCEL, button -> this.close())
                         .dimensions(this.width - 10 - 100, this.height - 25, 100, 20)
                         .build()
@@ -214,6 +214,14 @@ public class CalciteCommandScreen extends Screen {
     }
 
     @Override
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
+        if (this.commandListWidget.mouseDragged(mouseX, mouseY, button, deltaX, deltaY)) {
+            return true;
+        }
+        return super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
+    }
+
+    @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         super.render(context, mouseX, mouseY, delta);
 
@@ -221,10 +229,6 @@ public class CalciteCommandScreen extends Screen {
             commandSuggestorRenderer.run();
             commandSuggestorRenderer = null;
         }
-    }
-
-    public void update(CommandBlockBlockEntity blockEntity) {
-        this.commandListWidget.update(blockEntity);
     }
 
     public void updateAll() {
@@ -266,10 +270,6 @@ public class CalciteCommandScreen extends Screen {
             this.indexedWidgets.add(widget);
             this.positionedWidgets.put(blockEntity.getPos(), widget);
             this.addEntry(widget);
-        }
-
-        public void update(CommandBlockBlockEntity blockEntity) {
-            this.positionedWidgets.get(blockEntity.getPos()).updateCommandBlock();
         }
 
         @Override
