@@ -35,7 +35,6 @@ import java.util.*;
 public class CalciteCommandScreen extends Screen {
     private final World world;
     private final BlockPos blockPos;
-    private final Queue<CommandBlockBlockEntity> nbtQueryQueue = new LinkedList<>();
     private boolean isInitialized = false;
     private CommandListWidget commandListWidget;
     @Nullable
@@ -62,7 +61,6 @@ public class CalciteCommandScreen extends Screen {
             for (Direction d : directions) {
                 BlockPos tempNext = current.offset(d);
                 if (visited.contains(tempNext)) continue;
-                visited.add(tempNext);
 
                 BlockState blockState = this.world.getBlockState(tempNext);
                 Block block = blockState.getBlock();
@@ -71,6 +69,8 @@ public class CalciteCommandScreen extends Screen {
 
                 Direction facing = blockState.get(CommandBlock.FACING);
                 if (!current.equals(tempNext.offset(facing))) continue;
+
+                visited.add(tempNext);
 
                 next = tempNext;
                 count++;
@@ -111,10 +111,15 @@ public class CalciteCommandScreen extends Screen {
         if (!this.isInitialized) {
             for (CommandBlockBlockEntity blockEntity : this.getConnectedCommandBlocks()) {
                 this.commandListWidget.addCommandBlock(blockEntity);
-                nbtQueryQueue.add(blockEntity);
+
+                assert this.client != null;
+                assert this.client.getNetworkHandler() != null;
+                this.client.getNetworkHandler().getDataQueryHandler().queryBlockNbt(blockEntity.getPos(), nbtCompound -> {
+                    blockEntity.readNbt(nbtCompound);
+                    this.commandListWidget.positionedWidgets.get(blockEntity.getPos()).updateCommandBlock();
+                });
             }
 
-            this.queryNbts();
             this.commandListWidget.setFocused(this.commandListWidget.positionedWidgets.get(this.blockPos));
             this.commandListWidget.scrollToFocused();
         }
@@ -130,20 +135,6 @@ public class CalciteCommandScreen extends Screen {
                         .build()
         );
         this.isInitialized = true;
-    }
-
-    private void queryNbts() {
-        if (nbtQueryQueue.isEmpty()) return;
-
-        CommandBlockBlockEntity blockEntity = nbtQueryQueue.remove();
-
-        assert this.client != null;
-        assert this.client.getNetworkHandler() != null;
-        this.client.getNetworkHandler().getDataQueryHandler().queryBlockNbt(blockEntity.getPos(), nbtCompound -> {
-            blockEntity.readNbt(nbtCompound);
-            this.commandListWidget.positionedWidgets.get(blockEntity.getPos()).updateCommandBlock();
-            this.queryNbts();
-        });
     }
 
     @Override
@@ -231,10 +222,6 @@ public class CalciteCommandScreen extends Screen {
         }
     }
 
-    public void updateAll() {
-        this.commandListWidget.updateAll();
-    }
-
     @Environment(EnvType.CLIENT)
     public class CommandListWidget extends ElementListWidget<CommandWidget> {
         private List<CommandWidget> indexedWidgets;
@@ -289,12 +276,6 @@ public class CalciteCommandScreen extends Screen {
             return super.charTyped(chr, modifiers);
         }
 
-        public void updateAll() {
-            for (CommandWidget widget : this.indexedWidgets) {
-                widget.updateCommandBlock();
-            }
-        }
-
         @Override
         public void setFocused(@Nullable Element focused) {
             super.setFocused(focused);
@@ -319,6 +300,7 @@ public class CalciteCommandScreen extends Screen {
         private final CalciteTextFieldWidget commandEdit;
         private final ModeButtonWidget modeButton;
         private final AutoActivateButtonWidget autoActivateButton;
+        protected boolean loaded;
         protected boolean modified;
         private CommandBlockBlockEntity.Type mode;
         private boolean conditional;
@@ -326,6 +308,7 @@ public class CalciteCommandScreen extends Screen {
 
         public CommandWidget(CommandBlockBlockEntity blockEntity) {
             this.blockEntity = blockEntity;
+            this.loaded = false;
             this.modified = false;
 
             this.commandEdit = new CalciteTextFieldWidget(CalciteCommandScreen.this.textRenderer, CalciteCommandScreen.this.width - 70, 20, Text.of(""));
@@ -365,7 +348,7 @@ public class CalciteCommandScreen extends Screen {
         }
 
         public boolean isModified() {
-            return modified || !this.commandEdit.getText().equals(this.blockEntity.getCommandExecutor().getCommand());
+            return loaded && (modified || !this.commandEdit.getText().equals(this.blockEntity.getCommandExecutor().getCommand()));
         }
 
         private void onCommandChanged(String text) {
@@ -389,6 +372,7 @@ public class CalciteCommandScreen extends Screen {
             this.autoActivateButton.active = true;
 //            this.setPreviousOutputText(bl);
 //            this.setButtonsActive(true);
+            this.loaded = true;
         }
 
         @Override
