@@ -391,7 +391,10 @@ public class CalciteTextFieldWidget
         }
         if (bl2) {
             if (bl3) {
-                context.fill(RenderLayer.getGuiOverlay(), o, l - 1, o + 1, l + 1 + this.textRenderer.fontHeight, -3092272);
+                context.getMatrices().push();
+                context.getMatrices().translate(0, 0, 1);
+                context.fill(RenderLayer.getGui(), o, l - 1, o + 1, l + 1 + this.textRenderer.fontHeight, VERTICAL_CURSOR_COLOR);
+                context.getMatrices().pop();
             } else {
                 context.drawTextWithShadow(this.textRenderer, HORIZONTAL_CURSOR, o, l, i);
             }
