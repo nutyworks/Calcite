@@ -436,14 +436,6 @@ public class CalciteCommandScreen extends Screen {
 
         @Override
         public void render(DrawContext context, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta) {
-            this.modeButton.setX(10);
-            this.modeButton.setY(y + 2);
-            this.modeButton.render(context, mouseX, mouseY, tickDelta);
-
-            this.autoActivateButton.setX(30);
-            this.autoActivateButton.setY(y + 2);
-            this.autoActivateButton.render(context, mouseX, mouseY, tickDelta);
-
             this.commandEdit.setX(50);
             this.commandEdit.setY(y);
             this.commandEdit.render(context, mouseX, mouseY, tickDelta);
@@ -469,6 +461,15 @@ public class CalciteCommandScreen extends Screen {
                     context.getMatrices().pop();
                 };
             }
+
+            this.modeButton.setX(10);
+            this.modeButton.setY(y + 2);
+            this.modeButton.render(context, mouseX, mouseY, tickDelta);
+
+            this.autoActivateButton.setX(30);
+            this.autoActivateButton.setY(y + 2);
+            this.autoActivateButton.render(context, mouseX, mouseY, tickDelta);
+
         }
 
         protected void syncSettingsToServer() {
