@@ -109,9 +109,15 @@ public class CalciteCommandScreen extends Screen {
         this.commandListWidget = this.addDrawableChild(new CommandListWidget());
 
         if (!this.isInitialized) {
-            for (CommandBlockBlockEntity blockEntity : this.getConnectedCommandBlocks()) {
+            var connectedCommandBlocks = this.getConnectedCommandBlocks();
+            for (CommandBlockBlockEntity blockEntity : connectedCommandBlocks) {
                 this.commandListWidget.addCommandBlock(blockEntity);
+            }
 
+            this.commandListWidget.setFocused(this.commandListWidget.positionedWidgets.get(this.blockPos));
+            this.commandListWidget.scrollToFocused();
+
+            for (CommandBlockBlockEntity blockEntity : connectedCommandBlocks) {
                 assert this.client != null;
                 assert this.client.getNetworkHandler() != null;
                 this.client.getNetworkHandler().getDataQueryHandler().queryBlockNbt(blockEntity.getPos(), nbtCompound -> {
@@ -119,9 +125,6 @@ public class CalciteCommandScreen extends Screen {
                     this.commandListWidget.positionedWidgets.get(blockEntity.getPos()).updateCommandBlock();
                 });
             }
-
-            this.commandListWidget.setFocused(this.commandListWidget.positionedWidgets.get(this.blockPos));
-            this.commandListWidget.scrollToFocused();
         }
 
         this.addDrawableChild(
@@ -359,6 +362,9 @@ public class CalciteCommandScreen extends Screen {
             CommandBlockExecutor commandBlockExecutor = this.blockEntity.getCommandExecutor();
             this.commandEdit.setText(commandBlockExecutor.getCommand());
             this.commandEdit.setSuggestion(null);
+            if (!this.isFocused()) {
+                this.commandEdit.setCursorToStart(false);
+            }
 //            boolean bl = commandBlockExecutor.isTrackingOutput();
             this.mode = this.blockEntity.getCommandBlockType();
             this.conditional = this.blockEntity.isConditionalCommandBlock();
