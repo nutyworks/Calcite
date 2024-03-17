@@ -361,9 +361,9 @@ public class CalciteCommandScreen extends Screen {
         public void updateCommandBlock() {
             CommandBlockExecutor commandBlockExecutor = this.blockEntity.getCommandExecutor();
             this.commandEdit.setText(commandBlockExecutor.getCommand());
-            this.commandEdit.setSuggestion(null);
             if (!this.isFocused()) {
                 this.commandEdit.setCursorToStart(false);
+                this.commandEdit.setSuggestion(null);
             }
 //            boolean bl = commandBlockExecutor.isTrackingOutput();
             this.mode = this.blockEntity.getCommandBlockType();
