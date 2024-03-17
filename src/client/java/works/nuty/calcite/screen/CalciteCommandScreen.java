@@ -252,6 +252,7 @@ public class CalciteCommandScreen extends Screen {
             this.positionedWidgets = clw.positionedWidgets;
             for (var child : clw.children()) {
                 this.addEntry(child);
+                child.commandEdit.setWidth(CalciteCommandScreen.this.width - 70);
             }
         }
 
