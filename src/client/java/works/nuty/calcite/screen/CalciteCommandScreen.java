@@ -428,7 +428,7 @@ public class CalciteCommandScreen extends Screen {
 
         @Override
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
-            if (this.commandSuggestor.mouseClicked(mouseX, mouseY, button)) {
+            if (this.commandEdit.isFocused() && this.commandSuggestor.mouseClicked(mouseX, mouseY, button)) {
                 return true;
             }
             return super.mouseClicked(mouseX, mouseY, button);
