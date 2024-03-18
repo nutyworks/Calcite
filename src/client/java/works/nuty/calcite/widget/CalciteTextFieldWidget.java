@@ -19,14 +19,15 @@ import net.minecraft.client.sound.SoundManager;
 import net.minecraft.command.CommandSource;
 import net.minecraft.command.argument.ItemStackArgument;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.text.*;
 import net.minecraft.util.Colors;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.MathHelper;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
+import works.nuty.calcite.CalciteModClient;
+import works.nuty.calcite.VerticalNbtTextFormatter;
 import works.nuty.calcite.screen.CalciteInputSuggestor;
 
 import java.util.List;
@@ -39,7 +40,6 @@ import java.util.function.Predicate;
 public class CalciteTextFieldWidget
         extends ClickableWidget
         implements Drawable {
-    private static final Logger LOGGER = LogManager.getLogger("calcite");
     public static final int DEFAULT_EDITABLE_COLOR = 0xE0E0E0;
     private static final ButtonTextures TEXTURES = new ButtonTextures(new Identifier("widget/text_field"), new Identifier("widget/text_field_highlighted"));
     private static final int VERTICAL_CURSOR_COLOR = -3092272;
@@ -424,7 +424,9 @@ public class CalciteTextFieldWidget
                 int hw = this.textRenderer.getWidth(displayedString.substring(ds, de));
                 int hh = this.textRenderer.fontHeight + 2;
 
-                if (hx <= mouseX && mouseX <= hx + hw && hy <= mouseY && mouseY <= hy + hh) {
+                if (Screen.hasControlDown() && hx <= mouseX && mouseX <= hx + hw && hy <= mouseY && mouseY <= hy + hh) {
+                    context.getMatrices().push();
+                    context.getMatrices().translate(0, 0, 2);
                     Object result = arg.getResult();
                     if (result instanceof ItemStackArgument isa) {
                         try {
@@ -432,18 +434,22 @@ public class CalciteTextFieldWidget
                             context.drawItemTooltip(this.textRenderer, is, mouseX, mouseY);
                             context.drawItem(is, mouseX - 8, mouseY - 8);
                         } catch (CommandSyntaxException e) {
-                            LOGGER.warn("Invalid item stack detected");
+                            CalciteModClient.LOGGER.warn("Invalid item stack detected");
                         }
                     } else if (result instanceof MutableText mt) {
                         try {
                             var text = Texts.parse(null, mt, null, 0);
                             context.drawTooltip(this.textRenderer, text, mouseX, mouseY);
                         } catch (CommandSyntaxException e) {
-                            LOGGER.warn("Invalid text component detected");
+                            CalciteModClient.LOGGER.warn("Invalid text component detected");
                         }
+                    } else if (result instanceof NbtCompound nbt) {
+                        List<Text> text = new VerticalNbtTextFormatter("  ", 0).apply(nbt);
+                        context.drawTooltip(this.textRenderer, text, mouseX, mouseY);
                     } else {
-                        context.drawTooltip(this.textRenderer, List.of(Text.of(result.getClass().toString()), Text.of(result.toString())), mouseX, mouseY);
+//                        context.drawTooltip(this.textRenderer, List.of(Text.of(result.getClass().toString()), Text.of(result.toString())), mouseX, mouseY);
                     }
+                    context.getMatrices().pop();
                 }
             }
         }

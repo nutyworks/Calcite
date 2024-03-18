@@ -231,8 +231,11 @@ public class CalciteCommandScreen extends Screen {
             commandSuggestorRenderer = null;
         }
 
+        context.getMatrices().push();
+        context.getMatrices().translate(0, 0, 1);
         doneButton.render(context, mouseX, mouseY, delta);
         cancelButton.render(context, mouseX, mouseY, delta);
+        context.getMatrices().pop();
     }
 
     @Environment(EnvType.CLIENT)
