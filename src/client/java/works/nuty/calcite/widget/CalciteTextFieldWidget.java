@@ -1,5 +1,7 @@
 package works.nuty.calcite.widget;
 
+import com.mojang.brigadier.context.ParsedArgument;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.SharedConstants;
@@ -14,16 +16,21 @@ import net.minecraft.client.gui.screen.narration.NarrationPart;
 import net.minecraft.client.gui.widget.ClickableWidget;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.sound.SoundManager;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.OrderedText;
-import net.minecraft.text.Style;
-import net.minecraft.text.Text;
+import net.minecraft.command.CommandSource;
+import net.minecraft.command.argument.ItemStackArgument;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.text.*;
 import net.minecraft.util.Colors;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.MathHelper;
 import org.jetbrains.annotations.Nullable;
+import works.nuty.calcite.CalciteModClient;
+import works.nuty.calcite.VerticalNbtTextFormatter;
+import works.nuty.calcite.screen.CalciteInputSuggestor;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -51,6 +58,7 @@ public class CalciteTextFieldWidget
     private int selectionEnd;
     private int editableColor = 0xE0E0E0;
     private int uneditableColor = 0x707070;
+    public CalciteInputSuggestor suggestor;
     @Nullable
     private String suggestion;
     @Nullable
@@ -359,49 +367,91 @@ public class CalciteTextFieldWidget
             Identifier identifier = TEXTURES.get(this.isNarratable(), this.isFocused());
             context.drawGuiTexture(identifier, this.getX(), this.getY(), this.getWidth(), this.getHeight());
         }
-        int i = this.editable ? this.editableColor : this.uneditableColor;
-        int j = this.selectionStart - this.firstCharacterIndex;
-        String string = this.textRenderer.trimToWidth(this.text.substring(this.firstCharacterIndex), this.getInnerWidth());
-        boolean bl = j >= 0 && j <= string.length();
-        boolean bl2 = this.isFocused() && (Util.getMeasuringTimeMs() - this.lastSwitchFocusTime) / 300L % 2L == 0L && bl;
-        int k = this.drawsBackground ? this.getX() + 4 : this.getX();
-        int l = this.drawsBackground ? this.getY() + (this.height - 8) / 2 : this.getY();
-        int m = k;
-        int n = MathHelper.clamp(this.selectionEnd - this.firstCharacterIndex, 0, string.length());
-        if (!string.isEmpty()) {
-            String string2 = bl ? string.substring(0, j) : string;
-            m = context.drawTextWithShadow(this.textRenderer, this.renderTextProvider.apply(string2, this.firstCharacterIndex), m, l, i);
+        int color = this.editable ? this.editableColor : this.uneditableColor;
+        int displayedSelectionStart = this.selectionStart - this.firstCharacterIndex;
+        String displayedString = this.textRenderer.trimToWidth(this.text.substring(this.firstCharacterIndex), this.getInnerWidth());
+        boolean isNormalInFront = displayedSelectionStart >= 0 && displayedSelectionStart <= displayedString.length();
+        boolean showCursor = this.isFocused() && (Util.getMeasuringTimeMs() - this.lastSwitchFocusTime) / 300L % 2L == 0L && isNormalInFront;
+        int left = this.drawsBackground ? this.getX() + 4 : this.getX();
+        int top = this.drawsBackground ? this.getY() + (this.height - 8) / 2 : this.getY();
+        int cursor = left;
+        int displayedSelectionEnd = MathHelper.clamp(this.selectionEnd - this.firstCharacterIndex, 0, displayedString.length());
+        if (!displayedString.isEmpty()) {
+            String string2 = isNormalInFront ? displayedString.substring(0, displayedSelectionStart) : displayedString;
+            cursor = context.drawTextWithShadow(this.textRenderer, this.renderTextProvider.apply(string2, this.firstCharacterIndex), cursor, top, color);
         }
-        boolean bl3 = this.selectionStart < this.text.length() || this.text.length() >= this.getMaxLength();
-        int o = m;
-        if (!bl) {
-            o = j > 0 ? k + this.width : k;
-        } else if (bl3) {
-            --o;
-            --m;
+        boolean isInsideOfText = this.selectionStart < this.text.length() || this.text.length() >= this.getMaxLength();
+        int cursor2 = cursor;
+        if (!isNormalInFront) {
+            cursor2 = displayedSelectionStart > 0 ? left + this.width : left;
+        } else if (isInsideOfText) {
+            --cursor2;
+            --cursor;
         }
-        if (!string.isEmpty() && bl && j < string.length()) {
-            context.drawTextWithShadow(this.textRenderer, this.renderTextProvider.apply(string.substring(j), this.selectionStart), m, l, i);
+        if (!displayedString.isEmpty() && isNormalInFront && displayedSelectionStart < displayedString.length()) {
+            context.drawTextWithShadow(this.textRenderer, this.renderTextProvider.apply(displayedString.substring(displayedSelectionStart), this.selectionStart), cursor, top, color);
         }
-        if (!bl3 && this.suggestion != null) {
+        if (!isInsideOfText && this.suggestion != null) {
             if (this.text.isEmpty()) {
-                ++o;
+                ++cursor2;
             }
-            context.drawTextWithShadow(this.textRenderer, this.suggestion, o - 1, l, Colors.GRAY);
+            context.drawTextWithShadow(this.textRenderer, this.suggestion, cursor2 - 1, top, Colors.GRAY);
         }
-        if (bl2) {
-            if (bl3) {
+        if (showCursor) {
+            if (isInsideOfText) {
                 context.getMatrices().push();
                 context.getMatrices().translate(0, 0, 1);
-                context.fill(RenderLayer.getGui(), o, l - 1, o + 1, l + 1 + this.textRenderer.fontHeight, VERTICAL_CURSOR_COLOR);
+                context.fill(RenderLayer.getGui(), cursor2, top - 1, cursor2 + 1, top + 1 + this.textRenderer.fontHeight, VERTICAL_CURSOR_COLOR);
                 context.getMatrices().pop();
             } else {
-                context.drawTextWithShadow(this.textRenderer, HORIZONTAL_CURSOR, o, l, i);
+                context.drawTextWithShadow(this.textRenderer, HORIZONTAL_CURSOR, cursor2, top, color);
             }
         }
-        if (n != j) {
-            int p = k + this.textRenderer.getWidth(string.substring(0, n));
-            this.drawSelectionHighlight(context, o, l - 1, p - 1, l + 1 + this.textRenderer.fontHeight);
+        if (displayedSelectionEnd != displayedSelectionStart) {
+            int displayedSelectionRight = left + this.textRenderer.getWidth(displayedString.substring(0, displayedSelectionEnd));
+            this.drawSelectionHighlight(context, cursor2, top - 1, displayedSelectionRight - 1, top + 1 + this.textRenderer.fontHeight);
+        }
+        if (isHovered() && suggestor.parse != null) {
+            var args = suggestor.parse.getContext().getLastChild().getArguments();
+
+            for (String key : args.keySet()) {
+                ParsedArgument<CommandSource, ?> arg = args.get(key);
+                int displayedStringLength = displayedString.length();
+                int ds = MathHelper.clamp(arg.getRange().getStart() - firstCharacterIndex, 0, displayedStringLength);
+                int de = MathHelper.clamp(arg.getRange().getEnd() - firstCharacterIndex, 0, displayedStringLength);
+                int hx = left + this.textRenderer.getWidth(displayedString.substring(0, ds));
+                int hy = top - 1;
+                int hw = this.textRenderer.getWidth(displayedString.substring(ds, de));
+                int hh = this.textRenderer.fontHeight + 2;
+
+                if (Screen.hasControlDown() && hx <= mouseX && mouseX <= hx + hw && hy <= mouseY && mouseY <= hy + hh) {
+                    context.getMatrices().push();
+                    context.getMatrices().translate(0, 0, 2);
+                    Object result = arg.getResult();
+                    if (result instanceof ItemStackArgument isa) {
+                        try {
+                            ItemStack is = isa.createStack(1, false);
+                            context.drawItemTooltip(this.textRenderer, is, mouseX, mouseY);
+                            context.drawItem(is, mouseX - 8, mouseY - 8);
+                        } catch (CommandSyntaxException e) {
+                            CalciteModClient.LOGGER.warn("Invalid item stack detected");
+                        }
+                    } else if (result instanceof MutableText mt) {
+                        try {
+                            var text = Texts.parse(null, mt, null, 0);
+                            context.drawTooltip(this.textRenderer, text, mouseX, mouseY);
+                        } catch (CommandSyntaxException e) {
+                            CalciteModClient.LOGGER.warn("Invalid text component detected");
+                        }
+                    } else if (result instanceof NbtCompound nbt) {
+                        List<Text> text = new VerticalNbtTextFormatter("  ", 0).apply(nbt);
+                        context.drawTooltip(this.textRenderer, text, mouseX, mouseY);
+                    } else {
+//                        context.drawTooltip(this.textRenderer, List.of(Text.of(result.getClass().toString()), Text.of(result.toString())), mouseX, mouseY);
+                    }
+                    context.getMatrices().pop();
+                }
+            }
         }
     }
 

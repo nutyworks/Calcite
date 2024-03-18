@@ -37,6 +37,8 @@ public class CalciteCommandScreen extends Screen {
     private final BlockPos blockPos;
     private boolean isInitialized = false;
     private CommandListWidget commandListWidget;
+    private ButtonWidget doneButton;
+    private ButtonWidget cancelButton;
     @Nullable
     private Runnable commandSuggestorRenderer;
 
@@ -100,7 +102,7 @@ public class CalciteCommandScreen extends Screen {
     }
 
     @Nullable
-    private CommandWidget getFocusedCommandWidget() {
+    private AbstractCommandWidget getFocusedCommandWidget() {
         return this.commandListWidget.getFocused();
     }
 
@@ -113,6 +115,7 @@ public class CalciteCommandScreen extends Screen {
             for (CommandBlockBlockEntity blockEntity : connectedCommandBlocks) {
                 this.commandListWidget.addCommandBlock(blockEntity);
             }
+            this.commandListWidget.addBlank();
 
             this.commandListWidget.setFocused(this.commandListWidget.positionedWidgets.get(this.blockPos));
             this.commandListWidget.scrollToFocused();
@@ -127,16 +130,12 @@ public class CalciteCommandScreen extends Screen {
             }
         }
 
-        this.addDrawableChild(
-                ButtonWidget.builder(ScreenTexts.DONE, button -> this.commitAndClose())
-                        .dimensions(this.width - 10 - 200 - 5, this.height - 25, 100, 20)
-                        .build()
-        );
-        this.addDrawableChild(
-                ButtonWidget.builder(ScreenTexts.CANCEL, button -> this.close())
-                        .dimensions(this.width - 10 - 100, this.height - 25, 100, 20)
-                        .build()
-        );
+        this.doneButton = ButtonWidget.builder(ScreenTexts.DONE, button -> this.commitAndClose())
+            .dimensions(this.width - 10 - 200 - 5, this.height - 25, 100, 20)
+            .build();
+        this.cancelButton = ButtonWidget.builder(ScreenTexts.CANCEL, button -> this.close())
+            .dimensions(this.width - 10 - 100, this.height - 25, 100, 20)
+            .build();
         this.isInitialized = true;
     }
 
@@ -149,7 +148,7 @@ public class CalciteCommandScreen extends Screen {
 
     @Override
     public boolean shouldCloseOnEsc() {
-        return this.commandListWidget.children().stream().noneMatch(CommandWidget::isModified);
+        return this.commandListWidget.children().stream().noneMatch(AbstractCommandWidget::isModified);
     }
 
     private void commitAndClose() {
@@ -174,7 +173,7 @@ public class CalciteCommandScreen extends Screen {
             return true;
         }
         if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
-            CommandWidget focused = this.commandListWidget.getFocused();
+            AbstractCommandWidget focused = this.commandListWidget.getFocused();
             if (focused != null) {
                 this.commandListWidget.setFocused(null);
                 return true;
@@ -193,12 +192,20 @@ public class CalciteCommandScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        for (CommandWidget widget : this.commandListWidget.children()) {
-            if (widget.modeButton.mouseClicked(mouseX, mouseY, button)) {
-                return true;
-            }
-            if (widget.autoActivateButton.mouseClicked(mouseX, mouseY, button)) {
-                return true;
+        if (this.doneButton.mouseClicked(mouseX, mouseY, button)) {
+            return true;
+        }
+        if (this.cancelButton.mouseClicked(mouseX, mouseY, button)) {
+            return true;
+        }
+        for (AbstractCommandWidget widget : this.commandListWidget.children()) {
+            if (widget instanceof CommandWidget cw) {
+                if (cw.modeButton.mouseClicked(mouseX, mouseY, button)) {
+                    return true;
+                }
+                if (cw.autoActivateButton.mouseClicked(mouseX, mouseY, button)) {
+                    return true;
+                }
             }
         }
         if (this.commandListWidget.mouseClicked(mouseX, mouseY, button)) {
@@ -223,15 +230,52 @@ public class CalciteCommandScreen extends Screen {
             commandSuggestorRenderer.run();
             commandSuggestorRenderer = null;
         }
+
+        context.getMatrices().push();
+        context.getMatrices().translate(0, 0, 1);
+        doneButton.render(context, mouseX, mouseY, delta);
+        cancelButton.render(context, mouseX, mouseY, delta);
+        context.getMatrices().pop();
     }
 
     @Environment(EnvType.CLIENT)
-    public class CommandListWidget extends ElementListWidget<CommandWidget> {
+    public abstract static class AbstractCommandWidget extends ElementListWidget.Entry<AbstractCommandWidget> {
+        abstract public boolean isModified();
+    }
+
+    @Environment(EnvType.CLIENT)
+    public static class BlankCommandWidget extends AbstractCommandWidget {
+        public BlankCommandWidget() {
+        }
+
+        @Override
+        public List<? extends Selectable> selectableChildren() {
+            return List.of();
+        }
+
+        @Override
+        public List<? extends Element> children() {
+            return List.of();
+        }
+
+        @Override
+        public void render(DrawContext context, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta) {
+
+        }
+
+        public boolean isModified() {
+            return false;
+        }
+    }
+
+    @Environment(EnvType.CLIENT)
+    public class CommandListWidget extends ElementListWidget<AbstractCommandWidget> {
         private List<CommandWidget> indexedWidgets;
         private Map<BlockPos, CommandWidget> positionedWidgets;
 
         public CommandListWidget() {
-            super(CalciteCommandScreen.this.client, CalciteCommandScreen.this.width, CalciteCommandScreen.this.height - 34, 5, 24);
+            super(CalciteCommandScreen.this.client, CalciteCommandScreen.this.width, CalciteCommandScreen.this.height, 0, 24);
+            this.headerHeight = 5;
             this.indexedWidgets = new ArrayList<>();
             this.positionedWidgets = new HashMap<>();
             this.setRenderBackground(false);
@@ -242,13 +286,15 @@ public class CalciteCommandScreen extends Screen {
             this.positionedWidgets = clw.positionedWidgets;
             for (var child : clw.children()) {
                 this.addEntry(child);
-                child.commandEdit.setWidth(CalciteCommandScreen.this.width - 70);
+                if (child instanceof CommandWidget cw) {
+                    cw.commandEdit.setWidth(CalciteCommandScreen.this.width - 70);
+                }
             }
         }
 
         @Override
         protected int getScrollbarPositionX() {
-            return this.width - 10;
+            return this.width - 6;
         }
 
         @Override
@@ -263,11 +309,15 @@ public class CalciteCommandScreen extends Screen {
             this.addEntry(widget);
         }
 
+        public void addBlank() {
+            this.addEntry(new BlankCommandWidget());
+        }
+
         @Override
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
-            CommandWidget widget = this.getFocused();
-            if (widget != null) {
-                if (widget.commandSuggestor.mouseClicked(mouseX, mouseY, button)) {
+            AbstractCommandWidget widget = this.getFocused();
+            if (widget instanceof CommandWidget cw) {
+                if (cw.commandSuggestor.mouseClicked(mouseX, mouseY, button)) {
                     return true;
                 }
             }
@@ -296,7 +346,7 @@ public class CalciteCommandScreen extends Screen {
     }
 
     @Environment(EnvType.CLIENT)
-    public class CommandWidget extends ElementListWidget.Entry<CommandWidget> {
+    public class CommandWidget extends AbstractCommandWidget {
         protected final CalciteInputSuggestor commandSuggestor;
         protected final List<ClickableWidget> children;
         private final CommandBlockBlockEntity blockEntity;
