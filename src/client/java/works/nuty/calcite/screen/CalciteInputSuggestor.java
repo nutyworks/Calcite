@@ -34,6 +34,8 @@ import net.minecraft.util.Colors;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec2f;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 import works.nuty.calcite.widget.CalciteTextFieldWidget;
 
@@ -49,6 +51,7 @@ public class CalciteInputSuggestor {
     private static final Style ERROR_STYLE = Style.EMPTY.withColor(Formatting.RED);
     private static final Style INFO_STYLE = Style.EMPTY.withColor(Formatting.GRAY);
     private static final List<Style> HIGHLIGHT_STYLES = Stream.of(Formatting.AQUA, Formatting.YELLOW, Formatting.GREEN, Formatting.LIGHT_PURPLE, Formatting.GOLD).map(Style.EMPTY::withColor).collect(ImmutableList.toImmutableList());
+    private static final Logger LOGGER = LogManager.getLogger("calcite");
     final MinecraftClient client;
     final CalciteTextFieldWidget textField;
     final TextRenderer textRenderer;
@@ -65,7 +68,7 @@ public class CalciteInputSuggestor {
     private int x;
     private int width;
     @Nullable
-    private ParseResults<CommandSource> parse;
+    public ParseResults<CommandSource> parse;
     @Nullable
     private CompletableFuture<Suggestions> pendingSuggestions;
     private boolean windowActive;
@@ -75,6 +78,7 @@ public class CalciteInputSuggestor {
         this.client = client;
         this.owner = owner;
         this.textField = textField;
+        this.textField.suggestor = this;
         this.textRenderer = textRenderer;
         this.slashOptional = slashOptional;
         this.suggestingWhenEmpty = suggestingWhenEmpty;
@@ -245,6 +249,10 @@ public class CalciteInputSuggestor {
             CommandDispatcher<CommandSource> commandDispatcher = this.client.player.networkHandler.getCommandDispatcher();
             if (this.parse == null) {
                 this.parse = commandDispatcher.parse(stringReader, this.client.player.networkHandler.getCommandSource());
+                var args = this.parse.getContext().getLastChild().getArguments();
+                for (String key : args.keySet()) {
+                    LOGGER.info(key + ": " + args.get(key).getResult());
+                }
             }
             int j = this.suggestingWhenEmpty ? stringReader.getCursor() : 1;
             if (!(i < j || this.window != null && this.completingSuggestions)) {
