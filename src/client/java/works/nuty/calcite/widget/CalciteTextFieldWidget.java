@@ -425,9 +425,6 @@ public class CalciteTextFieldWidget
                 int hh = this.textRenderer.fontHeight + 2;
 
                 if (hx <= mouseX && mouseX <= hx + hw && hy <= mouseY && mouseY <= hy + hh) {
-                    if (isFocused()) {
-                        context.setShaderColor(1, 1, 1, 0.5f);
-                    }
                     Object result = arg.getResult();
                     if (result instanceof ItemStackArgument isa) {
                         try {
@@ -446,9 +443,6 @@ public class CalciteTextFieldWidget
                         }
                     } else {
                         context.drawTooltip(this.textRenderer, List.of(Text.of(result.getClass().toString()), Text.of(result.toString())), mouseX, mouseY);
-                    }
-                    if (isFocused()) {
-                        context.setShaderColor(1, 1, 1, 1f);
                     }
                 }
             }

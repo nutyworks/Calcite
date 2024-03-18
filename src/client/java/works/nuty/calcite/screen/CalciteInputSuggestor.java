@@ -249,10 +249,6 @@ public class CalciteInputSuggestor {
             CommandDispatcher<CommandSource> commandDispatcher = this.client.player.networkHandler.getCommandDispatcher();
             if (this.parse == null) {
                 this.parse = commandDispatcher.parse(stringReader, this.client.player.networkHandler.getCommandSource());
-                var args = this.parse.getContext().getLastChild().getArguments();
-                for (String key : args.keySet()) {
-                    LOGGER.info(key + ": " + args.get(key).getResult());
-                }
             }
             int j = this.suggestingWhenEmpty ? stringReader.getCursor() : 1;
             if (!(i < j || this.window != null && this.completingSuggestions)) {
