@@ -25,4 +25,7 @@ public interface ChatInputSuggestorFields {
 
     @Accessor
     List<OrderedText> getMessages();
+
+    @Accessor
+    boolean getChatScreenSized();
 }

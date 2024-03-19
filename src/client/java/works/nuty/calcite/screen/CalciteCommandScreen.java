@@ -371,7 +371,7 @@ public class CalciteCommandScreen extends Screen {
             this.commandEdit.setMaxLength(32500);
             this.commandEdit.setChangedListener(this::onCommandChanged);
 
-            this.commandSuggestor = new ChatInputSuggestor(CalciteCommandScreen.this.client, CalciteCommandScreen.this, this.commandEdit, CalciteCommandScreen.this.textRenderer, true, true, 0, 7, false, Integer.MIN_VALUE);
+            this.commandSuggestor = new ChatInputSuggestor(CalciteCommandScreen.this.client, CalciteCommandScreen.this, this.commandEdit, CalciteCommandScreen.this.textRenderer, true, true, 0, 10, false, Integer.MIN_VALUE);
             this.commandSuggestor.setWindowActive(true);
             this.commandSuggestor.refresh();
 
