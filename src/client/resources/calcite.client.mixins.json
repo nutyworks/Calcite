@@ -6,12 +6,12 @@
     "ChatInputSuggestorFields",
     "ClientPlayerEntityMixin",
     "DataQueryHandlerMixin",
-    "SuggestionWindowFields"
+    "SuggestionWindowFields",
+    "SuggestionWindowMixin"
   ],
   "injectors": {
     "defaultRequire": 1
   },
   "mixins": [
-    "SuggestionWindowMixin"
   ]
 }
