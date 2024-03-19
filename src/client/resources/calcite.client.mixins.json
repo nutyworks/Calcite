@@ -3,10 +3,15 @@
   "package": "works.nuty.calcite.mixin.client",
   "compatibilityLevel": "JAVA_17",
   "client": [
+    "ChatInputSuggestorFields",
     "ClientPlayerEntityMixin",
-    "DataQueryHandlerMixin"
+    "DataQueryHandlerMixin",
+    "SuggestionWindowFields",
+    "SuggestionWindowMixin"
   ],
   "injectors": {
     "defaultRequire": 1
-	}
+  },
+  "mixins": [
+  ]
 }
