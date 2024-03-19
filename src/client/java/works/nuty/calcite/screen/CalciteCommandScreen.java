@@ -342,9 +342,11 @@ public class CalciteCommandScreen extends Screen {
         }
 
         public void scrollToFocused() {
-            int index = indexedWidgets.indexOf(this.getFocused());
-            int itemsOnScreen = this.height / this.itemHeight;
-            this.setScrollAmount((index - itemsOnScreen / 2.0) * this.itemHeight);
+            if (this.getFocused() instanceof CommandWidget focusedWidget) {
+                int index = indexedWidgets.indexOf(focusedWidget);
+                int itemsOnScreen = this.height / this.itemHeight;
+                this.setScrollAmount((index - itemsOnScreen / 2.0) * this.itemHeight);
+            }
         }
     }
 
@@ -371,7 +373,7 @@ public class CalciteCommandScreen extends Screen {
             this.commandEdit.setMaxLength(32500);
             this.commandEdit.setChangedListener(this::onCommandChanged);
 
-            this.commandSuggestor = new ChatInputSuggestor(CalciteCommandScreen.this.client, CalciteCommandScreen.this, this.commandEdit, CalciteCommandScreen.this.textRenderer, true, true, 0, 7, false, Integer.MIN_VALUE);
+            this.commandSuggestor = new ChatInputSuggestor(CalciteCommandScreen.this.client, CalciteCommandScreen.this, this.commandEdit, CalciteCommandScreen.this.textRenderer, true, true, 0, 10, false, Integer.MIN_VALUE);
             this.commandSuggestor.setWindowActive(true);
             this.commandSuggestor.refresh();
 
@@ -506,13 +508,13 @@ public class CalciteCommandScreen extends Screen {
             if (this.isFocused()) {
                 CalciteCommandScreen.this.commandSuggestorRenderer = () -> {
                     context.getMatrices().push();
-                    context.getMatrices().translate(0, 0, 1);
+                    context.getMatrices().translate(3, 0, 1);
                     ChatInputSuggestor.SuggestionWindow window = ((ChatInputSuggestorFields) this.commandSuggestor).getWindow();
                     if (window != null) {
                         ((SuggestionWindowFields) window).getArea().setY(calculateSuggestionY(y));
                     }
                     if (!this.commandSuggestor.tryRenderWindow(context, mouseX, mouseY)) {
-                        context.getMatrices().translate(0, calculateMessageY(y), 0);
+                        context.getMatrices().translate(-3, calculateMessageY(y), 0);
                         this.commandSuggestor.renderMessages(context);
                     }
                     context.getMatrices().pop();
