@@ -78,7 +78,7 @@ public class CalciteInputSuggestor {
         this.client = client;
         this.owner = owner;
         this.textField = textField;
-        this.textField.suggestor = this;
+//        this.textField.suggestor = this;
         this.textRenderer = textRenderer;
         this.slashOptional = slashOptional;
         this.suggestingWhenEmpty = suggestingWhenEmpty;

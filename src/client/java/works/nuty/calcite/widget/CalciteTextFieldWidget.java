@@ -8,12 +8,12 @@ import net.minecraft.SharedConstants;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.Drawable;
 import net.minecraft.client.gui.screen.ButtonTextures;
+import net.minecraft.client.gui.screen.ChatInputSuggestor;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
 import net.minecraft.client.gui.screen.narration.NarrationPart;
-import net.minecraft.client.gui.widget.ClickableWidget;
+import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.sound.SoundManager;
 import net.minecraft.command.CommandSource;
@@ -28,7 +28,7 @@ import net.minecraft.util.math.MathHelper;
 import org.jetbrains.annotations.Nullable;
 import works.nuty.calcite.CalciteModClient;
 import works.nuty.calcite.VerticalNbtTextFormatter;
-import works.nuty.calcite.screen.CalciteInputSuggestor;
+import works.nuty.calcite.mixin.client.ChatInputSuggestorFields;
 
 import java.util.List;
 import java.util.Objects;
@@ -38,8 +38,7 @@ import java.util.function.Predicate;
 
 @Environment(value = EnvType.CLIENT)
 public class CalciteTextFieldWidget
-        extends ClickableWidget
-        implements Drawable {
+    extends TextFieldWidget {
     public static final int DEFAULT_EDITABLE_COLOR = 0xE0E0E0;
     private static final ButtonTextures TEXTURES = new ButtonTextures(new Identifier("widget/text_field"), new Identifier("widget/text_field_highlighted"));
     private static final int VERTICAL_CURSOR_COLOR = -3092272;
@@ -58,7 +57,7 @@ public class CalciteTextFieldWidget
     private int selectionEnd;
     private int editableColor = 0xE0E0E0;
     private int uneditableColor = 0x707070;
-    public CalciteInputSuggestor suggestor;
+    public ChatInputSuggestor suggestor;
     @Nullable
     private String suggestion;
     @Nullable
@@ -75,8 +74,8 @@ public class CalciteTextFieldWidget
         this(textRenderer, x, y, width, height, null, text);
     }
 
-    public CalciteTextFieldWidget(TextRenderer textRenderer, int x, int y, int width, int height, @Nullable net.minecraft.client.gui.widget.TextFieldWidget copyFrom, Text text) {
-        super(x, y, width, height, text);
+    public CalciteTextFieldWidget(TextRenderer textRenderer, int x, int y, int width, int height, @Nullable TextFieldWidget copyFrom, Text text) {
+        super(textRenderer, x, y, width, height, copyFrom, text);
         this.textRenderer = textRenderer;
         if (copyFrom != null) {
             this.setText(copyFrom.getText());
@@ -411,8 +410,8 @@ public class CalciteTextFieldWidget
             int displayedSelectionRight = left + this.textRenderer.getWidth(displayedString.substring(0, displayedSelectionEnd));
             this.drawSelectionHighlight(context, cursor2, top - 1, displayedSelectionRight - 1, top + 1 + this.textRenderer.fontHeight);
         }
-        if (isHovered() && suggestor.parse != null) {
-            var args = suggestor.parse.getContext().getLastChild().getArguments();
+        if (isHovered() && ((ChatInputSuggestorFields) suggestor).getParse() != null) {
+            var args = ((ChatInputSuggestorFields) suggestor).getParse().getContext().getLastChild().getArguments();
 
             for (String key : args.keySet()) {
                 ParsedArgument<CommandSource, ?> arg = args.get(key);

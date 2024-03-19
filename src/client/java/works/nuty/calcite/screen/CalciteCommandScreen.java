@@ -11,6 +11,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.Selectable;
+import net.minecraft.client.gui.screen.ChatInputSuggestor;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.ClickableWidget;
@@ -25,6 +26,8 @@ import net.minecraft.world.CommandBlockExecutor;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
+import works.nuty.calcite.mixin.client.ChatInputSuggestorFields;
+import works.nuty.calcite.mixin.client.SuggestionWindowFields;
 import works.nuty.calcite.widget.AutoActivateButtonWidget;
 import works.nuty.calcite.widget.CalciteTextFieldWidget;
 import works.nuty.calcite.widget.ModeButtonWidget;
@@ -347,7 +350,7 @@ public class CalciteCommandScreen extends Screen {
 
     @Environment(EnvType.CLIENT)
     public class CommandWidget extends AbstractCommandWidget {
-        protected final CalciteInputSuggestor commandSuggestor;
+        protected final ChatInputSuggestor commandSuggestor;
         protected final List<ClickableWidget> children;
         private final CommandBlockBlockEntity blockEntity;
         private final CalciteTextFieldWidget commandEdit;
@@ -368,10 +371,11 @@ public class CalciteCommandScreen extends Screen {
             this.commandEdit.setMaxLength(32500);
             this.commandEdit.setChangedListener(this::onCommandChanged);
 
-            this.commandSuggestor = new CalciteInputSuggestor(CalciteCommandScreen.this.client, CalciteCommandScreen.this, this.commandEdit, CalciteCommandScreen.this.textRenderer, true, true, 0, 7, Integer.MIN_VALUE);
+            this.commandSuggestor = new ChatInputSuggestor(CalciteCommandScreen.this.client, CalciteCommandScreen.this, this.commandEdit, CalciteCommandScreen.this.textRenderer, true, true, 0, 7, false, Integer.MIN_VALUE);
             this.commandSuggestor.setWindowActive(true);
             this.commandSuggestor.refresh();
 
+            this.commandEdit.suggestor = this.commandSuggestor;
             this.commandEdit.setSuggestion(null);
 
             this.children = List.of(this.commandEdit);
@@ -503,11 +507,14 @@ public class CalciteCommandScreen extends Screen {
                 CalciteCommandScreen.this.commandSuggestorRenderer = () -> {
                     context.getMatrices().push();
                     context.getMatrices().translate(0, 0, 1);
-                    CalciteInputSuggestor.SuggestionWindow window = this.commandSuggestor.window;
+                    ChatInputSuggestor.SuggestionWindow window = ((ChatInputSuggestorFields) this.commandSuggestor).getWindow();
                     if (window != null) {
-                        window.area.setY(window.calculateY(y));
+                        ((SuggestionWindowFields) window).getArea().setY(calculateSuggestionY(y));
                     }
-                    this.commandSuggestor.render(context, mouseX, mouseY, y);
+                    if (!this.commandSuggestor.tryRenderWindow(context, mouseX, mouseY)) {
+                        context.getMatrices().translate(0, calculateMessageY(y), 0);
+                        this.commandSuggestor.renderMessages(context);
+                    }
                     context.getMatrices().pop();
                 };
             }
@@ -530,6 +537,18 @@ public class CalciteCommandScreen extends Screen {
             assert CalciteCommandScreen.this.client.getNetworkHandler() != null;
             CommandBlockExecutor commandExecutor = blockEntity.getCommandExecutor();
             CalciteCommandScreen.this.client.getNetworkHandler().sendPacket(new UpdateCommandBlockC2SPacket(BlockPos.ofFloored(commandExecutor.getPos()), this.commandEdit.getText(), this.mode, commandExecutor.isTrackingOutput(), this.conditional, this.autoActivate));
+        }
+
+        private int calculateSuggestionY(int y) {
+            return height / 2 - 6 < y
+                ? y - 3 - Math.min(((SuggestionWindowFields) ((ChatInputSuggestorFields) this.commandSuggestor).getWindow()).getSuggestions().size(), ((ChatInputSuggestorFields) this.commandSuggestor).getMaxSuggestionSize()) * 12
+                : (y + 24) - (this.commandEdit.drawsBackground() ? 1 : 0);
+        }
+
+        private int calculateMessageY(int y) {
+            return (height / 2 - 6 < y
+                ? y - 3 - ((ChatInputSuggestorFields) this.commandSuggestor).getMessages().size() * 12
+                : (y + 24) - (this.commandEdit.drawsBackground() ? 1 : 0)) - 72;
         }
     }
 }
