@@ -27,6 +27,7 @@ import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 import works.nuty.calcite.mixin.client.ChatInputSuggestorFields;
+import works.nuty.calcite.mixin.client.ClientPlayNetworkHandlerFields;
 import works.nuty.calcite.mixin.client.SuggestionWindowFields;
 import works.nuty.calcite.widget.AutoActivateButtonWidget;
 import works.nuty.calcite.widget.CalciteTextFieldWidget;
@@ -127,7 +128,7 @@ public class CalciteCommandScreen extends Screen {
                 assert this.client != null;
                 assert this.client.getNetworkHandler() != null;
                 this.client.getNetworkHandler().getDataQueryHandler().queryBlockNbt(blockEntity.getPos(), nbtCompound -> {
-                    blockEntity.readNbt(nbtCompound);
+                    blockEntity.readNbt(nbtCompound, ((ClientPlayNetworkHandlerFields) client.getNetworkHandler()).getCombinedDynamicRegistries());
                     this.commandListWidget.positionedWidgets.get(blockEntity.getPos()).updateCommandBlock();
                 });
             }
@@ -281,7 +282,6 @@ public class CalciteCommandScreen extends Screen {
             this.headerHeight = 5;
             this.indexedWidgets = new ArrayList<>();
             this.positionedWidgets = new HashMap<>();
-            this.setRenderBackground(false);
         }
 
         protected void apply(CommandListWidget clw) {
@@ -296,7 +296,7 @@ public class CalciteCommandScreen extends Screen {
         }
 
         @Override
-        protected int getScrollbarPositionX() {
+        protected int getScrollbarX() {
             return this.width - 6;
         }
 
@@ -337,7 +337,7 @@ public class CalciteCommandScreen extends Screen {
             super.setFocused(focused);
 
             if (focused instanceof CommandWidget commandWidget) {
-                commandWidget.focusOn(commandWidget.commandEdit);
+                commandWidget.setFocused(commandWidget.commandEdit);
             }
         }
 

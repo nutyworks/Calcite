@@ -4,7 +4,6 @@ import com.mojang.brigadier.context.ParsedArgument;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.SharedConstants;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
@@ -23,6 +22,7 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.text.*;
 import net.minecraft.util.Colors;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.StringHelper;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.MathHelper;
 import org.jetbrains.annotations.Nullable;
@@ -128,7 +128,7 @@ public class CalciteTextFieldWidget
         if (k <= 0) {
             return;
         }
-        String string = SharedConstants.stripInvalidChars(text);
+        String string = StringHelper.stripInvalidChars(text);
         int l = string.length();
         if (k < l) {
             if (Character.isHighSurrogate(string.charAt(k - 1))) {
@@ -336,7 +336,7 @@ public class CalciteTextFieldWidget
         if (!this.isActive()) {
             return false;
         }
-        if (SharedConstants.isValidChar(chr)) {
+        if (StringHelper.isValidChar(chr)) {
             if (this.editable) {
                 this.write(Character.toString(chr));
             }
@@ -410,48 +410,62 @@ public class CalciteTextFieldWidget
             int displayedSelectionRight = left + this.textRenderer.getWidth(displayedString.substring(0, displayedSelectionEnd));
             this.drawSelectionHighlight(context, cursor2, top - 1, displayedSelectionRight - 1, top + 1 + this.textRenderer.fontHeight);
         }
-        if (isHovered() && ((ChatInputSuggestorFields) suggestor).getParse() != null) {
-            var args = ((ChatInputSuggestorFields) suggestor).getParse().getContext().getLastChild().getArguments();
-
-            for (String key : args.keySet()) {
-                ParsedArgument<CommandSource, ?> arg = args.get(key);
-                int displayedStringLength = displayedString.length();
-                int ds = MathHelper.clamp(arg.getRange().getStart() - firstCharacterIndex, 0, displayedStringLength);
-                int de = MathHelper.clamp(arg.getRange().getEnd() - firstCharacterIndex, 0, displayedStringLength);
-                int hx = left + this.textRenderer.getWidth(displayedString.substring(0, ds));
-                int hy = top - 1;
-                int hw = this.textRenderer.getWidth(displayedString.substring(ds, de));
-                int hh = this.textRenderer.fontHeight + 2;
-
-                if (Screen.hasControlDown() && hx <= mouseX && mouseX <= hx + hw && hy <= mouseY && mouseY <= hy + hh) {
-                    context.getMatrices().push();
-                    context.getMatrices().translate(0, 0, 2);
-                    Object result = arg.getResult();
-                    if (result instanceof ItemStackArgument isa) {
-                        try {
-                            ItemStack is = isa.createStack(1, false);
-                            context.drawItemTooltip(this.textRenderer, is, mouseX, mouseY);
-                            context.drawItem(is, mouseX - 8, mouseY - 8);
-                        } catch (CommandSyntaxException e) {
-                            CalciteModClient.LOGGER.warn("Invalid item stack detected");
-                        }
-                    } else if (result instanceof MutableText mt) {
-                        try {
-                            var text = Texts.parse(null, mt, null, 0);
-                            context.drawTooltip(this.textRenderer, text, mouseX, mouseY);
-                        } catch (CommandSyntaxException e) {
-                            CalciteModClient.LOGGER.warn("Invalid text component detected");
-                        }
-                    } else if (result instanceof NbtCompound nbt) {
-                        List<Text> text = new VerticalNbtTextFormatter("  ", 0).apply(nbt);
-                        context.drawTooltip(this.textRenderer, text, mouseX, mouseY);
-                    } else {
-//                        context.drawTooltip(this.textRenderer, List.of(Text.of(result.getClass().toString()), Text.of(result.toString())), mouseX, mouseY);
-                    }
-                    context.getMatrices().pop();
+        ParsedArgument<?, ?> arg;
+        if (isHovered() && (arg = this.getArgumentAtMouse(mouseX, mouseY)) != null) {
+            context.getMatrices().push();
+            context.getMatrices().translate(0, 0, 2);
+            Object result = arg.getResult();
+            if (result instanceof ItemStackArgument isa) {
+                try {
+                    ItemStack is = isa.createStack(1, false);
+                    context.drawItemTooltip(this.textRenderer, is, mouseX, mouseY);
+                    context.drawItem(is, mouseX - 8, mouseY - 8);
+                } catch (CommandSyntaxException e) {
+                    CalciteModClient.LOGGER.warn("Invalid item stack detected");
                 }
+            } else if (result instanceof MutableText mt) {
+                try {
+                    var text = Texts.parse(null, mt, null, 0);
+                    context.drawTooltip(this.textRenderer, text, mouseX, mouseY);
+                } catch (CommandSyntaxException e) {
+                    CalciteModClient.LOGGER.warn("Invalid text component detected");
+                }
+            } else if (result instanceof NbtCompound nbt) {
+                List<Text> text = new VerticalNbtTextFormatter("  ", 0).apply(nbt);
+                context.drawTooltip(this.textRenderer, text, mouseX, mouseY);
+            } else {
+//                        context.drawTooltip(this.textRenderer, List.of(Text.of(result.getClass().toString()), Text.of(result.toString())), mouseX, mouseY);
+            }
+            context.getMatrices().pop();
+        }
+    }
+
+    @Nullable
+    public ParsedArgument<?, ?> getArgumentAtMouse(int mouseX, int mouseY) {
+        if (((ChatInputSuggestorFields) suggestor).getParse() == null) return null;
+
+        String displayedString = this.textRenderer.trimToWidth(this.text.substring(this.firstCharacterIndex), this.getInnerWidth());
+        int left = this.drawsBackground ? this.getX() + 4 : this.getX();
+        int top = this.drawsBackground ? this.getY() + (this.height - 8) / 2 : this.getY();
+
+        var args = ((ChatInputSuggestorFields) suggestor).getParse().getContext().getLastChild().getArguments();
+
+        for (String key : args.keySet()) {
+            ParsedArgument<CommandSource, ?> arg = args.get(key);
+            int displayedStringLength = displayedString.length();
+            int ds = MathHelper.clamp(arg.getRange().getStart() - firstCharacterIndex, 0, displayedStringLength);
+            int de = MathHelper.clamp(arg.getRange().getEnd() - firstCharacterIndex, 0, displayedStringLength);
+            int hx = left + this.textRenderer.getWidth(displayedString.substring(0, ds));
+            int hy = top - 1;
+            int hw = this.textRenderer.getWidth(displayedString.substring(ds, de));
+            int hh = this.textRenderer.fontHeight + 2;
+
+            if (Screen.hasControlDown() && hx <= mouseX && mouseX <= hx + hw && hy <= mouseY && mouseY <= hy + hh) {
+                return arg;
             }
         }
+
+        return null;
     }
 
     private void drawSelectionHighlight(DrawContext context, int x1, int y1, int x2, int y2) {

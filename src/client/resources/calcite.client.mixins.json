@@ -5,6 +5,7 @@
   "client": [
     "ChatInputSuggestorFields",
     "ClientPlayerEntityMixin",
+    "ClientPlayNetworkHandlerFields",
     "DataQueryHandlerMixin",
     "SuggestionWindowFields",
     "SuggestionWindowMixin"
