@@ -7,12 +7,12 @@
     "ClientPlayerEntityMixin",
     "ClientPlayNetworkHandlerFields",
     "DataQueryHandlerMixin",
+    "SuggestionsBuilderFields",
     "SuggestionWindowFields",
-    "SuggestionWindowMixin"
+    "SuggestionWindowMixin",
+    "argument.NbtCompoundArgumentTypeMixin"
   ],
   "injectors": {
     "defaultRequire": 1
-  },
-  "mixins": [
-  ]
+  }
 }

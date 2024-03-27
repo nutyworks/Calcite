@@ -1,5 +1,6 @@
 package works.nuty.calcite.screen;
 
+import com.mojang.brigadier.context.ParsedArgument;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.block.Block;
@@ -11,25 +12,25 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.Selectable;
-import net.minecraft.client.gui.screen.ChatInputSuggestor;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.ClickableWidget;
 import net.minecraft.client.gui.widget.ElementListWidget;
 import net.minecraft.client.util.NarratorManager;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.packet.c2s.play.UpdateCommandBlockC2SPacket;
 import net.minecraft.screen.ScreenTexts;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.CommandBlockExecutor;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
-import works.nuty.calcite.mixin.client.ChatInputSuggestorFields;
 import works.nuty.calcite.mixin.client.ClientPlayNetworkHandlerFields;
-import works.nuty.calcite.mixin.client.SuggestionWindowFields;
 import works.nuty.calcite.widget.AutoActivateButtonWidget;
+import works.nuty.calcite.widget.CalciteInputSuggestor;
 import works.nuty.calcite.widget.CalciteTextFieldWidget;
 import works.nuty.calcite.widget.ModeButtonWidget;
 
@@ -45,6 +46,7 @@ public class CalciteCommandScreen extends Screen {
     private ButtonWidget cancelButton;
     @Nullable
     private Runnable commandSuggestorRenderer;
+    private CommandListWidget oldCommandListWidget;
 
     public CalciteCommandScreen(CommandBlockBlockEntity initialBlockEntity) {
         super(NarratorManager.EMPTY);
@@ -132,6 +134,8 @@ public class CalciteCommandScreen extends Screen {
                     this.commandListWidget.positionedWidgets.get(blockEntity.getPos()).updateCommandBlock();
                 });
             }
+        } else {
+            this.commandListWidget.apply(this.oldCommandListWidget);
         }
 
         this.doneButton = ButtonWidget.builder(ScreenTexts.DONE, button -> this.commitAndClose())
@@ -145,9 +149,14 @@ public class CalciteCommandScreen extends Screen {
 
     @Override
     public void resize(MinecraftClient client, int width, int height) {
-        CommandListWidget clw = this.commandListWidget;
+        this.oldCommandListWidget = this.commandListWidget;
         this.init(client, width, height);
-        this.commandListWidget.apply(clw);
+    }
+
+    @Override
+    public void removed() {
+        super.removed();
+        this.oldCommandListWidget = this.commandListWidget;
     }
 
     @Override
@@ -352,7 +361,7 @@ public class CalciteCommandScreen extends Screen {
 
     @Environment(EnvType.CLIENT)
     public class CommandWidget extends AbstractCommandWidget {
-        protected final ChatInputSuggestor commandSuggestor;
+        protected final CalciteInputSuggestor commandSuggestor;
         protected final List<ClickableWidget> children;
         private final CommandBlockBlockEntity blockEntity;
         private final CalciteTextFieldWidget commandEdit;
@@ -373,7 +382,7 @@ public class CalciteCommandScreen extends Screen {
             this.commandEdit.setMaxLength(32500);
             this.commandEdit.setChangedListener(this::onCommandChanged);
 
-            this.commandSuggestor = new ChatInputSuggestor(CalciteCommandScreen.this.client, CalciteCommandScreen.this, this.commandEdit, CalciteCommandScreen.this.textRenderer, true, true, 0, 10, false, Integer.MIN_VALUE);
+            this.commandSuggestor = new CalciteInputSuggestor(CalciteCommandScreen.this.client, CalciteCommandScreen.this, this.commandEdit, CalciteCommandScreen.this.textRenderer, true, true, 0, 10, false, Integer.MIN_VALUE);
             this.commandSuggestor.setWindowActive(true);
             this.commandSuggestor.refresh();
 
@@ -484,6 +493,14 @@ public class CalciteCommandScreen extends Screen {
 
         @Override
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
+            ParsedArgument<?, ?> arg;
+            if ((arg = this.commandEdit.getArgumentAtMouse(MathHelper.floor(mouseX - 4), MathHelper.floor(mouseY))) != null) {
+                Object result = arg.getResult();
+                if (result instanceof NbtCompound nbt) {
+                    assert CalciteCommandScreen.this.client != null;
+                    CalciteCommandScreen.this.client.setScreen(new CalciteNBTEditScreen(CalciteCommandScreen.this, nbt, arg.getRange(), this.commandEdit));
+                }
+            }
             if (this.commandEdit.isFocused() && this.commandSuggestor.mouseClicked(mouseX, mouseY, button)) {
                 return true;
             }
@@ -509,14 +526,7 @@ public class CalciteCommandScreen extends Screen {
                 CalciteCommandScreen.this.commandSuggestorRenderer = () -> {
                     context.getMatrices().push();
                     context.getMatrices().translate(3, 0, 1);
-                    ChatInputSuggestor.SuggestionWindow window = ((ChatInputSuggestorFields) this.commandSuggestor).getWindow();
-                    if (window != null) {
-                        ((SuggestionWindowFields) window).getArea().setY(calculateSuggestionY(y));
-                    }
-                    if (!this.commandSuggestor.tryRenderWindow(context, mouseX, mouseY)) {
-                        context.getMatrices().translate(-3, calculateMessageY(y), 0);
-                        this.commandSuggestor.renderMessages(context);
-                    }
+                    this.commandSuggestor.render(context, y, mouseX, mouseY);
                     context.getMatrices().pop();
                 };
             }
@@ -539,18 +549,6 @@ public class CalciteCommandScreen extends Screen {
             assert CalciteCommandScreen.this.client.getNetworkHandler() != null;
             CommandBlockExecutor commandExecutor = blockEntity.getCommandExecutor();
             CalciteCommandScreen.this.client.getNetworkHandler().sendPacket(new UpdateCommandBlockC2SPacket(BlockPos.ofFloored(commandExecutor.getPos()), this.commandEdit.getText(), this.mode, commandExecutor.isTrackingOutput(), this.conditional, this.autoActivate));
-        }
-
-        private int calculateSuggestionY(int y) {
-            return height / 2 - 6 < y
-                ? y - 3 - Math.min(((SuggestionWindowFields) ((ChatInputSuggestorFields) this.commandSuggestor).getWindow()).getSuggestions().size(), ((ChatInputSuggestorFields) this.commandSuggestor).getMaxSuggestionSize()) * 12
-                : (y + 24) - (this.commandEdit.drawsBackground() ? 1 : 0);
-        }
-
-        private int calculateMessageY(int y) {
-            return (height / 2 - 6 < y
-                ? y - 3 - ((ChatInputSuggestorFields) this.commandSuggestor).getMessages().size() * 12
-                : (y + 24) - (this.commandEdit.drawsBackground() ? 1 : 0)) - 72;
         }
     }
 }

@@ -8,7 +8,6 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ButtonTextures;
-import net.minecraft.client.gui.screen.ChatInputSuggestor;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
 import net.minecraft.client.gui.screen.narration.NarrationPart;
@@ -28,7 +27,6 @@ import net.minecraft.util.math.MathHelper;
 import org.jetbrains.annotations.Nullable;
 import works.nuty.calcite.CalciteModClient;
 import works.nuty.calcite.VerticalNbtTextFormatter;
-import works.nuty.calcite.mixin.client.ChatInputSuggestorFields;
 
 import java.util.List;
 import java.util.Objects;
@@ -57,7 +55,7 @@ public class CalciteTextFieldWidget
     private int selectionEnd;
     private int editableColor = 0xE0E0E0;
     private int uneditableColor = 0x707070;
-    public ChatInputSuggestor suggestor;
+    public CalciteInputSuggestor suggestor;
     @Nullable
     private String suggestion;
     @Nullable
@@ -82,7 +80,7 @@ public class CalciteTextFieldWidget
         }
     }
 
-    public void setChangedListener(Consumer<String> changedListener) {
+    public void setChangedListener(@Nullable Consumer<String> changedListener) {
         this.changedListener = changedListener;
     }
 
@@ -442,13 +440,13 @@ public class CalciteTextFieldWidget
 
     @Nullable
     public ParsedArgument<?, ?> getArgumentAtMouse(int mouseX, int mouseY) {
-        if (((ChatInputSuggestorFields) suggestor).getParse() == null) return null;
+        if (this.suggestor.parse == null) return null;
 
         String displayedString = this.textRenderer.trimToWidth(this.text.substring(this.firstCharacterIndex), this.getInnerWidth());
         int left = this.drawsBackground ? this.getX() + 4 : this.getX();
         int top = this.drawsBackground ? this.getY() + (this.height - 8) / 2 : this.getY();
 
-        var args = ((ChatInputSuggestorFields) suggestor).getParse().getContext().getLastChild().getArguments();
+        var args = this.suggestor.parse.getContext().getLastChild().getArguments();
 
         for (String key : args.keySet()) {
             ParsedArgument<CommandSource, ?> arg = args.get(key);
@@ -486,7 +484,7 @@ public class CalciteTextFieldWidget
         if (x1 > this.getX() + this.width) {
             x1 = this.getX() + this.width;
         }
-        context.fill(RenderLayer.getGuiTextHighlight(), x1, y1, x2, y2, -16776961);
+        context.fill(RenderLayer.getGuiTextHighlight(), x1, y1, x2, y2, 0xff0000ff);
     }
 
     private int getMaxLength() {
