@@ -5,7 +5,6 @@ import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import net.minecraft.predicate.NumberRange;
 import net.minecraft.util.math.random.Random;
-import works.nuty.calcite.CalciteModClient;
 import works.nuty.calcite.parser.array.IntArrayParser;
 import works.nuty.calcite.parser.primitive.IntParser;
 
@@ -28,7 +27,6 @@ public class UUIDParser extends IntArrayParser {
     @Override
     public void parse() throws CommandSyntaxException {
         if (reader().canRead() && reader().peek() == '[') {
-            CalciteModClient.LOGGER.info("calling super");
             super.parse();
         } else {
             parentParser.suggest(UUIDParser::suggestRandomUUID);
