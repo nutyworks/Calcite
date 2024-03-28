@@ -6,6 +6,7 @@
     "ChatInputSuggestorFields",
     "ClientPlayerEntityMixin",
     "ClientPlayNetworkHandlerFields",
+    "CommandBlockBlockEntityInvoker",
     "DataQueryHandlerMixin",
     "SuggestionsBuilderFields",
     "SuggestionWindowFields",

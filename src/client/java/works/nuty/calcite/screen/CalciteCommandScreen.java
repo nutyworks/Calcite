@@ -29,6 +29,7 @@ import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 import works.nuty.calcite.mixin.client.ClientPlayNetworkHandlerFields;
+import works.nuty.calcite.mixin.client.CommandBlockBlockEntityInvoker;
 import works.nuty.calcite.widget.AutoActivateButtonWidget;
 import works.nuty.calcite.widget.CalciteInputSuggestor;
 import works.nuty.calcite.widget.CalciteTextFieldWidget;
@@ -130,7 +131,7 @@ public class CalciteCommandScreen extends Screen {
                 assert this.client != null;
                 assert this.client.getNetworkHandler() != null;
                 this.client.getNetworkHandler().getDataQueryHandler().queryBlockNbt(blockEntity.getPos(), nbtCompound -> {
-                    blockEntity.readNbt(nbtCompound, ((ClientPlayNetworkHandlerFields) client.getNetworkHandler()).getCombinedDynamicRegistries());
+                    ((CommandBlockBlockEntityInvoker) blockEntity).invokeReadNbt(nbtCompound, ((ClientPlayNetworkHandlerFields) client.getNetworkHandler()).getCombinedDynamicRegistries());
                     this.commandListWidget.positionedWidgets.get(blockEntity.getPos()).updateCommandBlock();
                 });
             }

@@ -9,6 +9,6 @@ import java.util.List;
 
 @Mixin(SuggestionsBuilder.class)
 public interface SuggestionsBuilderFields {
-    @Accessor
+    @Accessor(remap = false)
     List<Suggestion> getResult();
 }
