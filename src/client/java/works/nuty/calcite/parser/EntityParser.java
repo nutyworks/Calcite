@@ -26,7 +26,7 @@ import java.util.concurrent.CompletableFuture;
 public class EntityParser extends DefaultParser {
     public static final SimpleCommandExceptionType EXPECTED_KEY = new SimpleCommandExceptionType(Text.translatable("argument.nbt.expected.key"));
     public static final SimpleCommandExceptionType EXPECTED_VALUE = new SimpleCommandExceptionType(Text.translatable("argument.nbt.expected.value"));
-    private final static Map<String, Class<?>> ENTITY_REGISTRY_ID_2_CLASS = ImmutableMap.<String, Class<?>>builder()
+    private final static Map<String, Class<? extends Entity>> ENTITY_REGISTRY_ID_2_CLASS = ImmutableMap.<String, Class<? extends Entity>>builder()
         .put("minecraft:allay", AllayEntity.class)
         .put("minecraft:area_effect_cloud", AreaEffectCloudEntity.class)
         .put("minecraft:armadillo", ArmadilloEntity.class)
@@ -157,7 +157,7 @@ public class EntityParser extends DefaultParser {
         .put("minecraft:player", PlayerEntity.class)
         .put("minecraft:fishing_bobber", FishingBobberEntity.class)
         .build();
-    private Class<?> entityClass;
+    private Class<? extends Entity> entityClass;
 
     public EntityParser(StringReader reader) {
         this(reader, "");
@@ -169,7 +169,7 @@ public class EntityParser extends DefaultParser {
         this.entityClass = getEntityClass(entityRegistryId);
     }
 
-    Class<?> getEntityClass(String registryId) {
+    Class<? extends Entity> getEntityClass(String registryId) {
         String prefixed = registryId.startsWith("minecraft:") ? registryId : ("minecraft:" + registryId);
         return ENTITY_REGISTRY_ID_2_CLASS.getOrDefault(prefixed, Entity.class);
     }
@@ -250,7 +250,7 @@ public class EntityParser extends DefaultParser {
         return super.getSuggestions().apply(builder.createOffset(this.reader().getCursor()));
     }
 
-    public Class<?> getEntityClass() {
+    public Class<? extends Entity> getEntityClass() {
         return entityClass;
     }
 

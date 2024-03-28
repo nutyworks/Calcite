@@ -83,7 +83,7 @@ public class EntityOptions {
         final ValueHandler valueHandler;
         final Predicate<EntityParser> predicate;
 
-        Option(Class<?> requiresClass, ValueHandler valueHandler) {
+        Option(Class<? extends Entity> requiresClass, ValueHandler valueHandler) {
             this(requiresClass, valueHandler, ignored -> true);
         }
 
