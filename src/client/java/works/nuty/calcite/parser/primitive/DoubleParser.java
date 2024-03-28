@@ -26,11 +26,6 @@ public class DoubleParser extends DefaultParser {
         };
     }
 
-    private static String removeSuffix(String value) {
-        if (value.endsWith("d") || value.endsWith("D")) return value.substring(0, value.length() - 1);
-        return value;
-    }
-
     public void parse() throws CommandSyntaxException {
         final int start = reader().getCursor();
         final String value = parentParser.reader().readUnquotedString();
@@ -40,7 +35,7 @@ public class DoubleParser extends DefaultParser {
             throw CommandSyntaxException.BUILT_IN_EXCEPTIONS.readerExpectedFloat().createWithContext(parentParser.reader());
         }
         try {
-            Float.parseFloat(removeSuffix(value));
+            Double.parseDouble(value);
         } catch (NumberFormatException ignored) {
             parentParser.reader().setCursor(start);
             throw CommandSyntaxException.BUILT_IN_EXCEPTIONS.readerInvalidFloat().createWithContext(parentParser.reader(), value);

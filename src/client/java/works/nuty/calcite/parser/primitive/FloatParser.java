@@ -25,11 +25,6 @@ public class FloatParser extends DefaultParser {
         };
     }
 
-    private static String removeSuffix(String value) {
-        if (value.endsWith("f") || value.endsWith("F")) return value.substring(0, value.length() - 1);
-        return value;
-    }
-
     public void parse() throws CommandSyntaxException {
         final int start = parentParser.reader().getCursor();
         final String value = parentParser.reader().readUnquotedString();
@@ -39,7 +34,7 @@ public class FloatParser extends DefaultParser {
             throw CommandSyntaxException.BUILT_IN_EXCEPTIONS.readerExpectedFloat().createWithContext(parentParser.reader());
         }
         try {
-            Float.parseFloat(removeSuffix(value));
+            Float.parseFloat(value);
         } catch (NumberFormatException ignored) {
             parentParser.reader().setCursor(start);
             throw CommandSyntaxException.BUILT_IN_EXCEPTIONS.readerInvalidFloat().createWithContext(parentParser.reader(), value);
