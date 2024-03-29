@@ -9,14 +9,12 @@ import works.nuty.calcite.parser.DefaultParser;
 import java.util.concurrent.CompletableFuture;
 
 public class ArrayParser extends DefaultParser {
-    private final DefaultParser parentParser;
     private final DefaultParser elementParser;
     private final NumberRange.IntRange sizeRange;
     private final char prefix;
 
-    public ArrayParser(DefaultParser parentParser, DefaultParser elementParser, NumberRange.IntRange sizeRange, char prefix) {
-        super(parentParser.reader());
-        this.parentParser = parentParser;
+    public ArrayParser(DefaultParser parent, DefaultParser elementParser, NumberRange.IntRange sizeRange, char prefix) {
+        super(parent);
         this.elementParser = elementParser;
         this.sizeRange = sizeRange;
         this.prefix = prefix;
@@ -39,7 +37,7 @@ public class ArrayParser extends DefaultParser {
     }
 
     public void parse() throws CommandSyntaxException {
-        parentParser.suggest(this::suggestArrayOpen);
+        suggest(this::suggestArrayOpen);
         int start = reader().getCursor();
         if (!reader().canRead(3)) {
             throw CommandSyntaxException.BUILT_IN_EXCEPTIONS.readerExpectedSymbol().createWithContext(reader(), "[" + prefix + ";");
@@ -61,10 +59,10 @@ public class ArrayParser extends DefaultParser {
             this.reader().skipWhitespace();
 
             if (i < sizeRange.min().orElse(0)) {
-                parentParser.suggest(ArrayParser::suggestNext);
+                suggest(ArrayParser::suggestNext);
                 reader().expect(',');
             } else if (i < sizeRange.max().orElse(Integer.MAX_VALUE)) {
-                parentParser.suggest(ArrayParser::suggestListCloseOrNext);
+                suggest(ArrayParser::suggestListCloseOrNext);
                 if (!reader().canRead())
                     throw CommandSyntaxException.BUILT_IN_EXCEPTIONS.readerExpectedSymbol().createWithContext(reader(), ',');
                 if (reader().peek() == ',') {
@@ -74,7 +72,7 @@ public class ArrayParser extends DefaultParser {
                     return;
                 }
             } else {
-                parentParser.suggest(ArrayParser::suggestListClose);
+                suggest(ArrayParser::suggestListClose);
                 reader().expect(']');
                 return;
             }

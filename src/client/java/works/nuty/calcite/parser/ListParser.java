@@ -4,17 +4,16 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import net.minecraft.predicate.NumberRange;
+import works.nuty.calcite.CalciteMod;
 
 import java.util.concurrent.CompletableFuture;
 
 public class ListParser extends DefaultParser {
-    private final DefaultParser parentParser;
     private final DefaultParser elementParser;
     private final NumberRange.IntRange sizeRange;
 
-    public ListParser(DefaultParser parentParser, DefaultParser elementParser, NumberRange.IntRange sizeRange) {
-        super(parentParser.reader());
-        this.parentParser = parentParser;
+    public ListParser(DefaultParser parent, DefaultParser elementParser, NumberRange.IntRange sizeRange) {
+        super(parent);
         this.elementParser = elementParser;
         this.sizeRange = sizeRange;
     }
@@ -41,21 +40,24 @@ public class ListParser extends DefaultParser {
     }
 
     public void parse() throws CommandSyntaxException {
-        parentParser.suggest(ListParser::suggestListOpen);
+        CalciteMod.LOGGER.info("Start of list parser: " + this);
+        suggest(ListParser::suggestListOpen);
         reader().expect('[');
+        CalciteMod.LOGGER.info("  got [");
         reader().skipWhitespace();
         int i = 0;
         do {
             ++i;
-            this.suggestNothing();
+            CalciteMod.LOGGER.info("  element " + i);
+            suggestNothing();
             elementParser.parse();
             this.reader().skipWhitespace();
 
             if (i < sizeRange.min().orElse(0)) {
-                parentParser.suggest(ListParser::suggestNext);
+                suggest(ListParser::suggestNext);
                 reader().expect(',');
             } else if (i < sizeRange.max().orElse(Integer.MAX_VALUE)) {
-                parentParser.suggest(ListParser::suggestListCloseOrNext);
+                suggest(ListParser::suggestListCloseOrNext);
                 if (!reader().canRead())
                     throw CommandSyntaxException.BUILT_IN_EXCEPTIONS.readerExpectedSymbol().createWithContext(reader(), ',');
                 if (reader().peek() == ',') {
@@ -65,7 +67,7 @@ public class ListParser extends DefaultParser {
                     return;
                 }
             } else {
-                parentParser.suggest(ListParser::suggestListClose);
+                suggest(ListParser::suggestListClose);
                 reader().expect(']');
                 return;
             }

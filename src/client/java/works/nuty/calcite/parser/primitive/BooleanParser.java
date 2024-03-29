@@ -8,11 +8,8 @@ import works.nuty.calcite.parser.DefaultParser;
 import java.util.concurrent.CompletableFuture;
 
 public class BooleanParser extends DefaultParser {
-    private final DefaultParser parentParser;
-
-    public BooleanParser(DefaultParser parentParser) {
-        super(parentParser.reader());
-        this.parentParser = parentParser;
+    public BooleanParser(DefaultParser parent) {
+        super(parent);
     }
 
     private static CompletableFuture<Suggestions> suggestBoolean(SuggestionsBuilder builder) {
@@ -22,16 +19,16 @@ public class BooleanParser extends DefaultParser {
     }
 
     public void parse() throws CommandSyntaxException {
-        parentParser.suggest(BooleanParser::suggestBoolean);
-        final int start = parentParser.reader().getCursor();
-        final String value = parentParser.reader().readString();
+        suggest(BooleanParser::suggestBoolean);
+        final int start = reader().getCursor();
+        final String value = reader().readString();
         if (value.isEmpty()) {
-            parentParser.reader().setCursor(start);
-            throw CommandSyntaxException.BUILT_IN_EXCEPTIONS.readerExpectedBool().createWithContext(parentParser.reader());
+            reader().setCursor(start);
+            throw CommandSyntaxException.BUILT_IN_EXCEPTIONS.readerExpectedBool().createWithContext(reader());
         }
         if (!value.equals("true") && !value.equals("false")) {
-            parentParser.reader().setCursor(start);
-            throw CommandSyntaxException.BUILT_IN_EXCEPTIONS.readerExpectedBool().createWithContext(parentParser.reader());
+            reader().setCursor(start);
+            throw CommandSyntaxException.BUILT_IN_EXCEPTIONS.readerExpectedBool().createWithContext(reader());
         }
     }
 }

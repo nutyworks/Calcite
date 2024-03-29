@@ -16,11 +16,9 @@ public class ByteParser extends DefaultParser {
     private static final DynamicCommandExceptionType READER_INVALID_BYTE = new DynamicCommandExceptionType(value -> new LiteralMessage("Invalid byte '" + value + "'"));
     private static final SimpleCommandExceptionType READER_EXPECTED_BYTE = new SimpleCommandExceptionType(new LiteralMessage("Expected byte"));
     private static final Pattern BYTE_PATTERN = Pattern.compile("[-+]?(?:0|[1-9][0-9]*)b", Pattern.CASE_INSENSITIVE);
-    private final DefaultParser parentParser;
 
-    public ByteParser(DefaultParser parentParser) {
-        super(parentParser.reader());
-        this.parentParser = parentParser;
+    public ByteParser(DefaultParser parent) {
+        super(parent);
     }
 
     private static Function<SuggestionsBuilder, CompletableFuture<Suggestions>> getByteSuggestionFunction(String value) {
@@ -42,27 +40,27 @@ public class ByteParser extends DefaultParser {
     }
 
     public void parse() throws CommandSyntaxException {
-        final int start = parentParser.reader().getCursor();
-        final String value = parentParser.reader().readUnquotedString();
-        parentParser.suggestNothing();
+        final int start = reader().getCursor();
+        final String value = reader().readUnquotedString();
+        suggestNothing();
         if (value.isEmpty()) {
-            parentParser.reader().setCursor(start);
-            throw READER_EXPECTED_BYTE.createWithContext(parentParser.reader());
+            reader().setCursor(start);
+            throw READER_EXPECTED_BYTE.createWithContext(reader());
         }
         try {
             if (!value.startsWith("t") && !value.startsWith("f")) {
                 Byte.parseByte(removeSuffix(value));
-                parentParser.suggest(getByteSuggestionFunction(value));
+                suggest(getByteSuggestionFunction(value));
             } else {
-                parentParser.suggest(ByteParser::suggestBoolean);
+                suggest(ByteParser::suggestBoolean);
             }
         } catch (NumberFormatException ignored) {
-            parentParser.reader().setCursor(start);
-            throw READER_INVALID_BYTE.createWithContext(parentParser.reader(), value);
+            reader().setCursor(start);
+            throw READER_INVALID_BYTE.createWithContext(reader(), value);
         }
         if (!BYTE_PATTERN.matcher(value).matches() && !value.equals("true") && !value.equals("false")) {
-            parentParser.reader().setCursor(start);
-            throw READER_INVALID_BYTE.createWithContext(parentParser.reader(), value);
+            reader().setCursor(start);
+            throw READER_INVALID_BYTE.createWithContext(reader(), value);
         }
     }
 }

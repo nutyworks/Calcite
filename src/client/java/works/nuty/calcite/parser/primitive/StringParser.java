@@ -9,11 +9,8 @@ import works.nuty.calcite.parser.DefaultParser;
 import java.util.concurrent.CompletableFuture;
 
 public class StringParser extends DefaultParser {
-    private final DefaultParser parentParser;
-
-    public StringParser(DefaultParser parentParser) {
-        super(parentParser.reader());
-        this.parentParser = parentParser;
+    public StringParser(DefaultParser parent) {
+        super(parent);
     }
 
     public static CompletableFuture<Suggestions> suggestQuotes(SuggestionsBuilder builder) {
@@ -23,25 +20,25 @@ public class StringParser extends DefaultParser {
     }
 
     public void parse() throws CommandSyntaxException {
-        parentParser.suggest(StringParser::suggestQuotes);
-        if (!parentParser.reader().canRead()) {
-            throw CommandSyntaxException.BUILT_IN_EXCEPTIONS.readerExpectedStartOfQuote().createWithContext(parentParser.reader());
+        suggest(StringParser::suggestQuotes);
+        if (!reader().canRead()) {
+            throw CommandSyntaxException.BUILT_IN_EXCEPTIONS.readerExpectedStartOfQuote().createWithContext(reader());
         }
-        final char next = parentParser.reader().peek();
+        final char next = reader().peek();
         if (StringReader.isQuotedStringStart(next)) {
-            parentParser.reader().skip();
+            reader().skip();
             try {
-                parentParser.reader().readStringUntil(next);
+                reader().readStringUntil(next);
             } catch (CommandSyntaxException ignored) {
-                parentParser.suggest((builder -> {
+                suggest((builder -> {
                     builder.suggest(Character.toString(next));
                     return builder.buildFuture();
                 }));
-                throw CommandSyntaxException.BUILT_IN_EXCEPTIONS.readerExpectedEndOfQuote().createWithContext(parentParser.reader());
+                throw CommandSyntaxException.BUILT_IN_EXCEPTIONS.readerExpectedEndOfQuote().createWithContext(reader());
             }
         } else {
-            parentParser.suggestNothing();
-            parentParser.reader().readUnquotedString();
+            suggestNothing();
+            reader().readUnquotedString();
         }
     }
 }

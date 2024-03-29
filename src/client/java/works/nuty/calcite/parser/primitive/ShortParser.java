@@ -16,11 +16,9 @@ public class ShortParser extends DefaultParser {
     private static final DynamicCommandExceptionType READER_INVALID_SHORT = new DynamicCommandExceptionType(value -> new LiteralMessage("Invalid byte '" + value + "'"));
     private static final SimpleCommandExceptionType READER_EXPECTED_SHORT = new SimpleCommandExceptionType(new LiteralMessage("Expected byte"));
     private static final Pattern SHORT_PATTERN = Pattern.compile("[-+]?(?:0|[1-9][0-9]*)s", Pattern.CASE_INSENSITIVE);
-    private final DefaultParser parentParser;
 
-    public ShortParser(DefaultParser parentParser) {
-        super(parentParser.reader());
-        this.parentParser = parentParser;
+    public ShortParser(DefaultParser parent) {
+        super(parent);
     }
 
     private static Function<SuggestionsBuilder, CompletableFuture<Suggestions>> getShortSuggestionFunction(String value) {
@@ -36,23 +34,23 @@ public class ShortParser extends DefaultParser {
     }
 
     public void parse() throws CommandSyntaxException {
-        final int start = parentParser.reader().getCursor();
-        final String value = parentParser.reader().readUnquotedString();
-        parentParser.suggestNothing();
+        final int start = reader().getCursor();
+        final String value = reader().readUnquotedString();
+        suggestNothing();
         if (value.isEmpty()) {
-            parentParser.reader().setCursor(start);
-            throw READER_EXPECTED_SHORT.createWithContext(parentParser.reader());
+            reader().setCursor(start);
+            throw READER_EXPECTED_SHORT.createWithContext(reader());
         }
         try {
             Short.parseShort(removeSuffix(value));
         } catch (NumberFormatException ignored) {
-            parentParser.reader().setCursor(start);
-            throw READER_INVALID_SHORT.createWithContext(parentParser.reader(), value);
+            reader().setCursor(start);
+            throw READER_INVALID_SHORT.createWithContext(reader(), value);
         }
-        parentParser.suggest(getShortSuggestionFunction(value));
+        suggest(getShortSuggestionFunction(value));
         if (!SHORT_PATTERN.matcher(value).matches()) {
-            parentParser.reader().setCursor(start);
-            throw READER_INVALID_SHORT.createWithContext(parentParser.reader(), value);
+            reader().setCursor(start);
+            throw READER_INVALID_SHORT.createWithContext(reader(), value);
         }
     }
 }

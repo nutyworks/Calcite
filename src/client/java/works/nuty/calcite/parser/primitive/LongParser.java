@@ -11,11 +11,9 @@ import java.util.regex.Pattern;
 
 public class LongParser extends DefaultParser {
     private static final Pattern LONG_PATTERN = Pattern.compile("[-+]?(?:0|[1-9][0-9]*)l", Pattern.CASE_INSENSITIVE);
-    private final DefaultParser parentParser;
 
-    public LongParser(DefaultParser parentParser) {
-        super(parentParser.reader());
-        this.parentParser = parentParser;
+    public LongParser(DefaultParser parent) {
+        super(parent);
     }
 
     private static Function<SuggestionsBuilder, CompletableFuture<Suggestions>> getLongSuggestionFunction(String value) {
@@ -31,23 +29,23 @@ public class LongParser extends DefaultParser {
     }
 
     public void parse() throws CommandSyntaxException {
-        final int start = parentParser.reader().getCursor();
-        final String value = parentParser.reader().readUnquotedString();
-        parentParser.suggestNothing();
+        final int start = reader().getCursor();
+        final String value = reader().readUnquotedString();
+        suggestNothing();
         if (value.isEmpty()) {
-            parentParser.reader().setCursor(start);
-            throw CommandSyntaxException.BUILT_IN_EXCEPTIONS.readerExpectedLong().createWithContext(parentParser.reader());
+            reader().setCursor(start);
+            throw CommandSyntaxException.BUILT_IN_EXCEPTIONS.readerExpectedLong().createWithContext(reader());
         }
         try {
             Long.parseLong(removeSuffix(value));
         } catch (NumberFormatException ignored) {
-            parentParser.reader().setCursor(start);
-            throw CommandSyntaxException.BUILT_IN_EXCEPTIONS.readerInvalidLong().createWithContext(parentParser.reader(), value);
+            reader().setCursor(start);
+            throw CommandSyntaxException.BUILT_IN_EXCEPTIONS.readerInvalidLong().createWithContext(reader(), value);
         }
-        parentParser.suggest(getLongSuggestionFunction(value));
+        suggest(getLongSuggestionFunction(value));
         if (!LONG_PATTERN.matcher(value).matches()) {
-            parentParser.reader().setCursor(start);
-            throw CommandSyntaxException.BUILT_IN_EXCEPTIONS.readerInvalidLong().createWithContext(parentParser.reader(), value);
+            reader().setCursor(start);
+            throw CommandSyntaxException.BUILT_IN_EXCEPTIONS.readerInvalidLong().createWithContext(reader(), value);
         }
     }
 }
