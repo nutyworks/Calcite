@@ -1,4 +1,4 @@
-package works.nuty.calcite.parser;
+package works.nuty.calcite.parser.common;
 
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.Suggestions;
@@ -11,11 +11,8 @@ import works.nuty.calcite.parser.primitive.IntParser;
 import java.util.concurrent.CompletableFuture;
 
 public class UUIDParser extends IntArrayParser {
-    private final DefaultParser parentParser;
-
-    public UUIDParser(DefaultParser parentParser) {
-        super(parentParser, new IntParser(parentParser), NumberRange.IntRange.exactly(4));
-        this.parentParser = parentParser;
+    public UUIDParser(DefaultParser parent) {
+        super(parent, new IntParser(parent), NumberRange.IntRange.exactly(4));
     }
 
     public static CompletableFuture<Suggestions> suggestRandomUUID(SuggestionsBuilder builder) {
@@ -29,7 +26,7 @@ public class UUIDParser extends IntArrayParser {
         if (reader().canRead() && reader().peek() == '[') {
             super.parse();
         } else {
-            parentParser.suggest(UUIDParser::suggestRandomUUID);
+            suggest(UUIDParser::suggestRandomUUID);
             throw CommandSyntaxException.BUILT_IN_EXCEPTIONS.readerExpectedSymbol().createWithContext(reader(), "[I;");
         }
     }

@@ -3,8 +3,7 @@ package works.nuty.calcite.parser.primitive;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
-import works.nuty.calcite.CalciteModClient;
-import works.nuty.calcite.parser.DefaultParser;
+import works.nuty.calcite.parser.common.DefaultParser;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;

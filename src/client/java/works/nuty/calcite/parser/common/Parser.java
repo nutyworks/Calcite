@@ -1,4 +1,4 @@
-package works.nuty.calcite.parser;
+package works.nuty.calcite.parser.common;
 
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 

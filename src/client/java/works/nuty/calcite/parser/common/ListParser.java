@@ -1,10 +1,9 @@
-package works.nuty.calcite.parser;
+package works.nuty.calcite.parser.common;
 
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import net.minecraft.predicate.NumberRange;
-import works.nuty.calcite.CalciteMod;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -40,15 +39,12 @@ public class ListParser extends DefaultParser {
     }
 
     public void parse() throws CommandSyntaxException {
-        CalciteMod.LOGGER.info("Start of list parser: " + this);
         suggest(ListParser::suggestListOpen);
         reader().expect('[');
-        CalciteMod.LOGGER.info("  got [");
         reader().skipWhitespace();
         int i = 0;
         do {
             ++i;
-            CalciteMod.LOGGER.info("  element " + i);
             suggestNothing();
             elementParser.parse();
             this.reader().skipWhitespace();

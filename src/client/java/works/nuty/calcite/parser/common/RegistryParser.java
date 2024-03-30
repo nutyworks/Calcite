@@ -1,14 +1,26 @@
-package works.nuty.calcite.parser;
+package works.nuty.calcite.parser.common;
 
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import net.minecraft.entity.EntityType;
-import net.minecraft.registry.Registries;
-import works.nuty.calcite.CalciteModClient;
+import net.minecraft.registry.Registry;
+import net.minecraft.util.Identifier;
+import works.nuty.calcite.parser.common.DefaultParser;
 
-public class EntityTypeParser extends DefaultParser {
+import java.util.Objects;
+import java.util.function.Predicate;
 
-    public EntityTypeParser(DefaultParser parent) {
+public class RegistryParser<T> extends DefaultParser {
+
+    private final Registry<T> registry;
+    private Predicate<T> filter = ignored -> true;
+
+    public RegistryParser(DefaultParser parent, Registry<T> registry, Predicate<T> filter) {
+        this(parent, registry);
+        this.filter = filter;
+    }
+
+    public RegistryParser(DefaultParser parent, Registry<T> registry) {
         super(parent);
+        this.registry = registry;
     }
 
     @Override
@@ -27,26 +39,25 @@ public class EntityTypeParser extends DefaultParser {
         final String prefixedId = (id.contains(":") || (quoted && "minecraft:".startsWith(id))) ? id : "minecraft:" + id;
 
         suggest(builder -> {
-            Registries.ENTITY_TYPE.stream()
-                .filter(EntityType::isSummonable)
-                .map(entityType -> Registries.ENTITY_TYPE.getId(entityType).toString())
+            registry.stream()
+                .filter(filter)
+                .map(registry::getId)
+                .filter(Objects::nonNull)
+                .map(Identifier::toString)
                 .filter(registryId -> registryId.startsWith(prefixedId))
                 .forEach(i -> builder.suggest("\"" + i + "\""));
 
             return builder.buildFuture();
         });
 
-        if (Registries.ENTITY_TYPE.stream()
-                .filter(EntityType::isSummonable)
-                .map(entityType -> Registries.ENTITY_TYPE.getId(entityType).toString())
+        if (registry.stream()
+                .filter(filter)
+                .map(registry::getId)
+                .filter(Objects::nonNull)
+                .map(Identifier::toString)
                 .anyMatch(registryId -> registryId.equals(prefixedId))) {
-            if (parent() instanceof EntityParser entityParser) {
-                entityParser.setEntityType(prefixedId);
-            }
             return;
         }
-
-        CalciteModClient.LOGGER.info(prefixedId);
 
         reader().setCursor(cursor);
         throw CommandSyntaxException.BUILT_IN_EXCEPTIONS.readerExpectedStartOfQuote().createWithContext(reader());

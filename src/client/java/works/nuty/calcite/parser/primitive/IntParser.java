@@ -1,7 +1,7 @@
 package works.nuty.calcite.parser.primitive;
 
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import works.nuty.calcite.parser.DefaultParser;
+import works.nuty.calcite.parser.common.DefaultParser;
 
 public class IntParser extends DefaultParser {
     public IntParser(DefaultParser parent) {

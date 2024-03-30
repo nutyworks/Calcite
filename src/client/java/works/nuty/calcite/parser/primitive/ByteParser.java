@@ -6,7 +6,7 @@ import com.mojang.brigadier.exceptions.DynamicCommandExceptionType;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
-import works.nuty.calcite.parser.DefaultParser;
+import works.nuty.calcite.parser.common.DefaultParser;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
